@@ -1,12 +1,9 @@
 ﻿using SQLite;
-using System.IO;
-using System.Threading.Tasks;
-using Microsoft.Maui.Storage;
 using MauiSqliteDemo;
 
 public class LocalDbService
 {
-    private const string DB_NAME = "customers.db3"; // Ensure this matches the name of your database file
+    private const string DB_NAME = "Comments.db3"; // Ensure this matches the name of your database file
     private readonly SQLiteAsyncConnection _connection;
 
     public LocalDbService()
@@ -29,36 +26,36 @@ public class LocalDbService
 
         // Create a connection to the database
         _connection = new SQLiteAsyncConnection(dbPath);
-        _connection.CreateTableAsync<Customer>().Wait();
+        _connection.CreateTableAsync<Comment>().Wait();
     }
 
-    public async Task<List<Customer>> GetCustomers()
+    public async Task<List<Comment>> GetComments()
     {
-        return await _connection.Table<Customer>().ToListAsync();
+        return await _connection.Table<Comment>().ToListAsync();
     }
 
-    public async Task<Customer> GetById(int id)
+    public async Task<Comment> GetById(int id)
     {
-        return await _connection.Table<Customer>().Where(x => x.Id == id).FirstOrDefaultAsync();
+        return await _connection.Table<Comment>().Where(x => x.Id == id).FirstOrDefaultAsync();
     }
 
-    public async Task Create(Customer customer)
+    public async Task Create(Comment Comment)
     {
-        await _connection.InsertAsync(customer);
+        await _connection.InsertAsync(Comment);
     }
 
-    public async Task Update(Customer customer)
+    public async Task Update(Comment Comment)
     {
-        await _connection.UpdateAsync(customer);
+        await _connection.UpdateAsync(Comment);
     }
 
-    public async Task Delete(Customer customer)
+    public async Task Delete(Comment Comment)
     {
-        await _connection.DeleteAsync(customer);
+        await _connection.DeleteAsync(Comment);
     }
     public async Task ClearAll()
     {
-        await _connection.DeleteAllAsync<Customer>();
+        await _connection.DeleteAllAsync<Comment>();
     }
 }
-//adb pull /data/data/com.companyname.mauisqlitedemo/databases/customers.db3 path/to/your/local/directory
+//adb pull /data/data/com.companyname.mauisqlitedemo/databases/Comments.db3 path/to/your/local/directory

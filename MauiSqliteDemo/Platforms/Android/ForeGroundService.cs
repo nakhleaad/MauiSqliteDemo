@@ -4,17 +4,24 @@ using Android.OS;
 using Android.Util;
 using AndroidX.Core.App;
 using MauiSqliteDemo;
+using Newtonsoft.Json;
+
 
 [Service(ForegroundServiceType = Android.Content.PM.ForegroundService.TypeDataSync)]
 public class ForegroundService : Service
 {
-    private LocalDbService _localDbService;
+    private LocalDbService? _localDbService;
+    private bool _isRunning;
+    private CancellationTokenSource? _cancellationTokenSource;
+    private readonly HttpClient _httpClient = new HttpClient();
 
-    public override IBinder OnBind(Intent intent) => null;
+
+    public override IBinder? OnBind(Intent intent) => null;
+
 
     public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId)
     {
-        CreateNotificationChannel();
+        //CreateNotificationChannel();
 
         var notification = new NotificationCompat.Builder(this, "foreground_service_channel")
             .SetContentTitle("Foreground Service")
@@ -25,48 +32,79 @@ public class ForegroundService : Service
 
         StartForeground(1, notification);
 
-        // Initialize the database service
         _localDbService = new LocalDbService();
+        _isRunning = true;
+        _cancellationTokenSource = new CancellationTokenSource();
 
-        // Put your background task here
-        DoBackgroundWork();
+        DoBackgroundWorkAsync(_cancellationTokenSource.Token);
 
         return StartCommandResult.Sticky;
     }
 
-    void DoBackgroundWork()
+
+    async void DoBackgroundWorkAsync(CancellationToken cancellationToken)
     {
-        // Example: Add customers in a new thread
-        Task.Run(async () =>
+        while (!cancellationToken.IsCancellationRequested)
         {
-            for (int i = 0; i < 1000; i++) // Adjust the number of iterations as needed
+            try
             {
-                var customer = new Customer
+                var comments = await FetchCommentsAsync();
+                var commentsToInsert = comments.Take(5).ToList();
+
+                foreach (var comment in commentsToInsert)
                 {
-                    CustomerName = $"Customer {i}",
-                    Email = $"customer{i}@example.com",
-                    Mobile = $"123456789{i}"
-                };
-
-                await _localDbService.Create(customer);
-
-                Log.Debug("ForegroundService", $"Added customer {i} to the database.");
-                Thread.Sleep(1000); // Simulate some delay
+                    await _localDbService.Create(comment);
+                    Log.Debug("ForegroundService", $"Added comment with ID {comment.Id} to the database.");
+                }
             }
-        });
-    }
+            catch (TaskCanceledException)
+            {
+                Log.Debug("ForegroundService", "Task was canceled.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("ForegroundService", $"Error fetching or saving comments: {ex.Message}");
+            }
 
-    void CreateNotificationChannel()
-    {
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
-        {
-            var channel = new NotificationChannel(
-                "foreground_service_channel",
-                "Foreground Service Channel",
-                NotificationImportance.Default);
-
-            var manager = (NotificationManager)GetSystemService(NotificationService);
-            manager.CreateNotificationChannel(channel);
+            try
+            {
+                await Task.Delay(10000, cancellationToken);
+            }
+            catch (TaskCanceledException)
+            {
+                Log.Debug("ForegroundService", "Task delay was canceled.");
+            }
         }
     }
+
+    async Task<List<Comment>> FetchCommentsAsync()
+    {
+        var response = await _httpClient.GetStringAsync("https://jsonplaceholder.typicode.com/comments");
+        return JsonConvert.DeserializeObject<List<Comment>>(response);
+    }
+
+
+    public override void OnDestroy()
+    {
+        _isRunning = false;
+        _cancellationTokenSource.Cancel();
+        _cancellationTokenSource.Dispose();
+        _httpClient.Dispose();
+        base.OnDestroy();
+    }
+
+
+    //void CreateNotificationChannel()
+    //{
+    //    if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+    //    {
+    //        var channel = new NotificationChannel(
+    //            "foreground_service_channel",
+    //            "Foreground Service Channel",
+    //            NotificationImportance.Default);
+
+    //        var manager = (NotificationManager)GetSystemService(NotificationService);
+    //        manager.CreateNotificationChannel(channel);
+    //    }
+    //}
 }
