@@ -13,7 +13,15 @@ public class ForegroundService : Service
     private LocalDbService? _localDbService;
     private bool _isRunning;
     private CancellationTokenSource? _cancellationTokenSource;
-    private readonly HttpClient _httpClient = new HttpClient();
+    private HttpClient _httpClient;
+
+    public override void OnCreate()
+    {
+        base.OnCreate();
+        var httpHandler = new SentryHttpMessageHandler();
+        _httpClient = new HttpClient(httpHandler);
+    }
+
 
 
     public override IBinder? OnBind(Intent intent) => null;
@@ -42,6 +50,40 @@ public class ForegroundService : Service
     }
 
 
+    //async void DoBackgroundWorkAsync(CancellationToken cancellationToken)
+    //{
+    //    while (!cancellationToken.IsCancellationRequested)
+    //    {
+    //        try
+    //        {
+    //            var comments = await FetchCommentsAsync();
+    //            var commentsToInsert = comments.Take(5).ToList();
+
+    //            foreach (var comment in commentsToInsert)
+    //            {
+    //                await _localDbService.Create(comment);
+    //                Log.Debug("ForegroundService", $"Added comment with ID {comment.Id} to the database.");
+    //            }
+    //        }
+    //        catch (TaskCanceledException)
+    //        {
+    //            Log.Debug("ForegroundService", "Task was canceled.");
+    //        }
+    //        catch (Exception ex)
+    //        {
+    //            Log.Error("ForegroundService", $"Error fetching or saving comments: {ex.Message}");
+    //        }
+
+    //        try
+    //        {
+    //            await Task.Delay(10000, cancellationToken);
+    //        }
+    //        catch (TaskCanceledException)
+    //        {
+    //            Log.Debug("ForegroundService", "Task delay was canceled.");
+    //        }
+    //    }
+    //}
     async void DoBackgroundWorkAsync(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
@@ -57,27 +99,31 @@ public class ForegroundService : Service
                     Log.Debug("ForegroundService", $"Added comment with ID {comment.Id} to the database.");
                 }
             }
-            catch (TaskCanceledException)
+            catch (TaskCanceledException ex)
             {
                 Log.Debug("ForegroundService", "Task was canceled.");
+                SentrySdk.CaptureException(ex);  // Log to Sentry
             }
             catch (Exception ex)
             {
                 Log.Error("ForegroundService", $"Error fetching or saving comments: {ex.Message}");
+                SentrySdk.CaptureException(ex);  // Log to Sentry
             }
 
             try
             {
                 await Task.Delay(10000, cancellationToken);
             }
-            catch (TaskCanceledException)
+            catch (TaskCanceledException ex)
             {
                 Log.Debug("ForegroundService", "Task delay was canceled.");
+                SentrySdk.CaptureException(ex);  // Log to Sentry
             }
         }
     }
 
-    async Task<List<Comment>> FetchCommentsAsync()
+
+    private async Task<List<Comment>> FetchCommentsAsync()
     {
         var response = await _httpClient.GetStringAsync("https://jsonplaceholder.typicode.com/comments");
         return JsonConvert.DeserializeObject<List<Comment>>(response);

@@ -59,3 +59,4 @@ public class LocalDbService
     }
 }
 //adb pull /data/data/com.companyname.mauisqlitedemo/databases/Comments.db3 path/to/your/local/directory
+//adb pull /data/user/0/com.companyname.mauisqlitedemo/files/comments.db3 C:\Users\Nakhle\Documents\comments.db3

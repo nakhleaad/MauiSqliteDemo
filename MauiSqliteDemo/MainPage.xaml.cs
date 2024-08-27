@@ -52,6 +52,7 @@ namespace MauiSqliteDemo
 #if ANDROID
             var intent = new Intent(Android.App.Application.Context, typeof(ForegroundService));
             Android.App.Application.Context.StartService(intent);
+            SentrySdk.CaptureMessage("Hello Sentry");
 #endif
         }
 
