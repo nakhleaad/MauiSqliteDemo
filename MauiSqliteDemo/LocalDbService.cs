@@ -3,29 +3,15 @@ using MauiSqliteDemo;
 
 public class LocalDbService
 {
-    private const string DB_NAME = "Comments.db3"; // Ensure this matches the name of your database file
+    private const string DB_NAME = "Comments.db3";
     private readonly SQLiteAsyncConnection _connection;
 
     public LocalDbService()
     {
-        // Get the path to the app's local data directory
         var dbPath = Path.Combine(FileSystem.AppDataDirectory, DB_NAME);
 
-        Console.WriteLine($"Database file path: {dbPath}");
-
-        // Ensure the database file exists; if not, copy it from the app resources
-        if (!File.Exists(dbPath))
-        {
-            var assembly = typeof(LocalDbService).Assembly;
-            using (var stream = assembly.GetManifestResourceStream($"MauiSqliteDemo.Resources.raw.{DB_NAME}"))
-            using (var fileStream = new FileStream(dbPath, FileMode.Create, FileAccess.Write))
-            {
-                stream.CopyTo(fileStream);
-            }
-        }
-
-        // Create a connection to the database
         _connection = new SQLiteAsyncConnection(dbPath);
+        // Ensure the table for the Comment model exists in the database
         _connection.CreateTableAsync<Comment>().Wait();
     }
 
@@ -39,24 +25,24 @@ public class LocalDbService
         return await _connection.Table<Comment>().Where(x => x.Id == id).FirstOrDefaultAsync();
     }
 
-    public async Task Create(Comment Comment)
+    public async Task Create(Comment comment)
     {
-        await _connection.InsertAsync(Comment);
+        await _connection.InsertAsync(comment);
     }
 
-    public async Task Update(Comment Comment)
+    public async Task Update(Comment comment)
     {
-        await _connection.UpdateAsync(Comment);
+        await _connection.UpdateAsync(comment);
     }
 
-    public async Task Delete(Comment Comment)
+    public async Task Delete(Comment comment)
     {
-        await _connection.DeleteAsync(Comment);
+        await _connection.DeleteAsync(comment);
     }
+
     public async Task ClearAll()
     {
         await _connection.DeleteAllAsync<Comment>();
     }
+
 }
-//adb pull /data/data/com.companyname.mauisqlitedemo/databases/Comments.db3 path/to/your/local/directory
-//adb pull /data/user/0/com.companyname.mauisqlitedemo/files/comments.db3 C:\Users\Nakhle\Documents\comments.db3

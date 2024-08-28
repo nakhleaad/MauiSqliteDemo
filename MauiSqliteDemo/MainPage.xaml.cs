@@ -9,43 +9,34 @@ namespace MauiSqliteDemo
     public partial class MainPage : ContentPage
     {
         private readonly LocalDbService _dbService;
-        private int _editCommentId;
+
+
         public MainPage(LocalDbService dbService)
         {
             InitializeComponent();
-            _dbService = dbService;
+            _dbService = dbService; // Assign the passed-in database service to a local variable
+            // Load the list of comments asynchronously and set them as the data source for the ListView
             Task.Run(async () => listView.ItemsSource = await _dbService.GetComments());
 
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourceNames = assembly.GetManifestResourceNames();
 
-            foreach (var name in resourceNames)
-            {
-                Console.WriteLine(name);
-            }
+            var assembly = Assembly.GetExecutingAssembly();
+
+            var resourceNames = assembly.GetManifestResourceNames();
 
 
         }
-
-
 
         private async void saveButton_Clicked(object sender, EventArgs e)
         {
-
-
             listView.ItemsSource = await _dbService.GetComments();
-
-
-
         }
+
+
         private async void Button_Clicked(object sender, EventArgs e)
         {
             await _dbService.ClearAll();
             listView.ItemsSource = await _dbService.GetComments();
-
-
         }
-
 
         private void OnStartServiceClicked(object sender, EventArgs e)
         {
@@ -61,10 +52,8 @@ namespace MauiSqliteDemo
 #if ANDROID
             var intent = new Intent(Android.App.Application.Context, typeof(ForegroundService));
             Android.App.Application.Context.StopService(intent);
-
 #endif
             listView.ItemsSource = await _dbService.GetComments();
-
         }
 
         private void OnCheckServiceClicked(object sender, EventArgs e)
@@ -78,9 +67,11 @@ namespace MauiSqliteDemo
         private bool IsServiceRunning(System.Type serviceType)
         {
 #if ANDROID
+            // Get the activity manager to check running services
             ActivityManager manager = (ActivityManager)Android.App.Application.Context.GetSystemService(Context.ActivityService);
             var runningServices = manager.GetRunningServices(int.MaxValue);
 
+            // Iterate through the running services to see if the specified service is active
             foreach (var service in runningServices)
             {
                 if (service.Service.ClassName.Equals(Java.Lang.Class.FromType(serviceType).CanonicalName))
@@ -89,12 +80,7 @@ namespace MauiSqliteDemo
                 }
             }
 #endif
-
             return false;
         }
-
-
     }
-
-
 }
