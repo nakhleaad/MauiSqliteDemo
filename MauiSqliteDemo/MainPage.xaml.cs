@@ -19,9 +19,6 @@ namespace MauiSqliteDemo
             Task.Run(async () => listView.ItemsSource = await _dbService.GetComments());
 
 
-            var assembly = Assembly.GetExecutingAssembly();
-
-            var resourceNames = assembly.GetManifestResourceNames();
 
 
         }
@@ -29,6 +26,11 @@ namespace MauiSqliteDemo
         private async void saveButton_Clicked(object sender, EventArgs e)
         {
             listView.ItemsSource = await _dbService.GetComments();
+        }
+
+        private async void crashButton_Clicked(object sender, EventArgs e)
+        {
+            throw new Exception();
         }
 
 
@@ -43,7 +45,6 @@ namespace MauiSqliteDemo
 #if ANDROID
             var intent = new Intent(Android.App.Application.Context, typeof(ForegroundService));
             Android.App.Application.Context.StartService(intent);
-            SentrySdk.CaptureMessage("Hello Sentry");
 #endif
         }
 

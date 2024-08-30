@@ -17,6 +17,7 @@
             <Button Clicked="OnStopServiceClicked" Text="Stop Service" />
             <Button Clicked="OnCheckServiceClicked" Text="Check Service Status" />
             <Button Clicked="Button_Clicked" Text="Clear List" />
+            <Button Clicked="crashButton_Clicked" Text="Crash" />
 
         </VerticalStackLayout>
         <ListView

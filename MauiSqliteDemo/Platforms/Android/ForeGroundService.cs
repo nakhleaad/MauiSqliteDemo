@@ -5,6 +5,7 @@ using Android.Util;
 using AndroidX.Core.App;
 using MauiSqliteDemo;
 using Newtonsoft.Json;
+using Sentry;
 
 [Service(ForegroundServiceType = Android.Content.PM.ForegroundService.TypeDataSync)]
 public class ForegroundService : Service
@@ -13,14 +14,20 @@ public class ForegroundService : Service
     private bool _isRunning;
     private CancellationTokenSource? _cancellationTokenSource;
     private HttpClient _httpClient;
+    private const string ChannelId = "foreground_service_channel";
+    private const int NotificationId = 1;
 
     // Called when the service is created
     public override void OnCreate()
     {
         base.OnCreate();
+
         // Initialize the HTTP client with Sentry error tracking
         var httpHandler = new SentryHttpMessageHandler();
         _httpClient = new HttpClient(httpHandler);
+
+        // Setup notification channel for Android 8.0 and above
+        CreateNotificationChannel();
     }
 
     public override IBinder? OnBind(Intent intent) => null;
@@ -29,14 +36,15 @@ public class ForegroundService : Service
     public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId)
     {
         // Create and display a notification for the foreground service
-        var notification = new NotificationCompat.Builder(this, "foreground_service_channel")
+        var notification = new NotificationCompat.Builder(this, ChannelId)
             .SetContentTitle("Foreground Service")
             .SetContentText("Service is running...")
+            //.SetSmallIcon(Android.Resource.Drawable) // Replace with your app's icon
             .SetOngoing(true) // Prevents the notification from being swiped away
             .Build();
 
         // Start the service in the foreground with the notification
-        StartForeground(1, notification);
+        StartForeground(NotificationId, notification);
 
         // Initialize the database service and set the running flag
         _localDbService = new LocalDbService();
@@ -114,5 +122,20 @@ public class ForegroundService : Service
         _cancellationTokenSource.Dispose();
         _httpClient.Dispose();
         base.OnDestroy();
+    }
+
+    // Create a notification channel for Android 8.0 and above
+    private void CreateNotificationChannel()
+    {
+        if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+        {
+            var channel = new NotificationChannel(ChannelId, "Foreground Service Channel", NotificationImportance.Default)
+            {
+                Description = "Channel for Foreground Service"
+            };
+
+            var notificationManager = (NotificationManager)GetSystemService(NotificationService);
+            notificationManager.CreateNotificationChannel(channel);
+        }
     }
 }
